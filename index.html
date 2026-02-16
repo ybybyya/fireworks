@@ -1,59 +1,50 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🎆 新年快乐 2026 🎆</title>
-
-<link rel="manifest" href="manifest.json">
-
 <style>
 body {
     margin: 0;
     overflow: hidden;
-    background: radial-gradient(circle at bottom, #000010, #000000 70%);
+    background: radial-gradient(circle at bottom, #000022, #000000 70%);
     font-family: "Microsoft YaHei", sans-serif;
 }
-
 canvas {
     position: fixed;
     top: 0;
     left: 0;
 }
-
 #countdown {
     position: absolute;
-    top: 30%;
+    top: 25%;
     width: 100%;
     text-align: center;
     font-size: 80px;
     color: gold;
     text-shadow: 0 0 20px red, 0 0 40px orange;
 }
-
 #message {
     position: absolute;
-    top: 15%;
+    top: 10%;
     width: 100%;
     text-align: center;
-    font-size: 28px;
+    font-size: 30px;
     color: gold;
     opacity: 0;
     animation: fadeIn 3s forwards;
     animation-delay: 10s;
     text-shadow: 0 0 15px red;
 }
-
 @keyframes fadeIn {
     to { opacity: 1; }
 }
-
 .hongbao {
     position: absolute;
     font-size: 30px;
-    animation: fall 6s linear infinite;
+    animation: fall linear infinite;
 }
-
 @keyframes fall {
     from { transform: translateY(-100px) rotate(0deg); }
     to { transform: translateY(110vh) rotate(360deg); }
@@ -65,9 +56,9 @@ canvas {
 <div id="countdown">10</div>
 
 <div id="message">
-🎆 祝郑有彣 2026年 🎆<br>
+🎆 祝 郑有彣 2026新年快乐 🧧<br>
+马年大吉 🐴 财富滚滚 💰<br>
 身体健康 💖 工作顺心 💼<br>
-生活顺利 🌸 新年快乐 🧧<br>
 爱我多多 💕
 </div>
 
@@ -80,34 +71,101 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let fireworks = [];
+let stars = [];
+let meteors = [];
+let hongbaos = [];
 
+// ===== 星空背景 =====
+for(let i=0;i<150;i++){
+    stars.push({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        r: Math.random()*1.5,
+        alpha: Math.random()
+    });
+}
+
+function drawStars(){
+    stars.forEach(s=>{
+        ctx.fillStyle = `rgba(255,255,255,${s.alpha})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fill();
+    });
+}
+
+// ===== 流星 =====
+function createMeteor(){
+    meteors.push({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height/2,
+        len: Math.random()*150+50,
+        speed: Math.random()*10+6
+    });
+}
+
+function drawMeteors(){
+    meteors.forEach((m,i)=>{
+        ctx.strokeStyle="rgba(255,255,255,0.8)";
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.moveTo(m.x, m.y);
+        ctx.lineTo(m.x - m.len*0.5, m.y + m.len*0.5);
+        ctx.stroke();
+        m.x += m.speed;
+        m.y += m.speed*0.5;
+        if(m.x>canvas.width || m.y>canvas.height) meteors.splice(i,1);
+    });
+}
+setInterval(createMeteor, 2000);
+
+// ===== 烟花 =====
 class Firework {
-    constructor(x,y){
+    constructor(x,y,type="circle"){
         this.particles = [];
-        let colors = ["#ff0000","#ffff00","#ff00ff","#00ffff","#ff8800","#ffffff"];
-        for(let i=0;i<80;i++){
+        let colors = ["#ff4d4d","#ffff66","#ff66ff","#66ffff","#ffb366","#ffffff"];
+        let count = type==="heart"?120:80;
+        for(let i=0;i<count;i++){
+            let speed = Math.random()*7+2;
+            let angle;
+            if(type==="heart"){
+                let t = (i/count)*2*Math.PI;
+                let r = 10*(1 - Math.sin(t));
+                angle = Math.atan2(-r*Math.sin(t), r*Math.cos(t));
+                speed = 4;
+            }else{
+                angle = Math.random()*2*Math.PI;
+            }
             this.particles.push({
                 x:x,
                 y:y,
-                angle:Math.random()*2*Math.PI,
-                speed:Math.random()*6+2,
+                angle:angle,
+                speed:speed,
                 radius:Math.random()*3+1,
                 alpha:1,
-                color:colors[Math.floor(Math.random()*colors.length)]
+                decay:Math.random()*0.015+0.01,
+                color: colors[Math.floor(Math.random()*colors.length)],
+                gravity:0.05,
+                friction:0.95
             });
         }
     }
     update(){
         this.particles.forEach(p=>{
-            p.x+=Math.cos(p.angle)*p.speed;
-            p.y+=Math.sin(p.angle)*p.speed;
-            p.alpha-=0.015;
+            p.x += Math.cos(p.angle)*p.speed;
+            p.y += Math.sin(p.angle)*p.speed + p.gravity;
+            p.speed *= p.friction;
+            p.alpha -= p.decay;
         });
     }
     draw(){
         this.particles.forEach(p=>{
+            if(p.alpha<=0) return;
+            let gradient = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.radius*4);
+            gradient.addColorStop(0,p.color);
+            gradient.addColorStop(1,"rgba(0,0,0,0)");
+            ctx.fillStyle=gradient;
             ctx.globalAlpha=p.alpha;
-            ctx.fillStyle=p.color;
             ctx.beginPath();
             ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);
             ctx.fill();
@@ -116,34 +174,62 @@ class Firework {
     }
 }
 
+// ===== 红包 =====
+function createHongbao(){
+    let hb = {
+        x: Math.random()*canvas.width,
+        y: -50,
+        size: 30+Math.random()*20,
+        speed: 2+Math.random()*3,
+        angle: Math.random()*2*Math.PI
+    };
+    hongbaos.push(hb);
+}
+function drawHongbao(){
+    hongbaos.forEach((hb,i)=>{
+        ctx.save();
+        ctx.translate(hb.x,hb.y);
+        ctx.rotate(Math.sin(Date.now()/200+hb.angle));
+        ctx.font = `${hb.size}px Arial`;
+        ctx.fillText("🧧",0,0);
+        ctx.restore();
+        hb.y += hb.speed;
+        if(hb.y>canvas.height+50) hongbaos.splice(i,1);
+    });
+}
+setInterval(createHongbao,800);
+
+// ===== 动画循环 =====
 function animate(){
-    ctx.fillStyle="rgba(0,0,0,0.2)";
+    ctx.fillStyle="rgba(0,0,0,0.1)";
     ctx.fillRect(0,0,canvas.width,canvas.height);
+    drawStars();
+    drawMeteors();
+    drawHongbao();
+
     fireworks.forEach((f,i)=>{
         f.update();
         f.draw();
-        if(f.particles[0].alpha<=0)fireworks.splice(i,1);
+        if(f.particles[0].alpha<=0) fireworks.splice(i,1);
     });
     requestAnimationFrame(animate);
 }
 animate();
 
+// ===== 自动生成烟花 =====
 setInterval(()=>{
-    fireworks.push(new Firework(
-        Math.random()*canvas.width,
-        Math.random()*canvas.height/2
-    ));
-},500);
+    let type = Math.random()<0.3?"heart":"circle";
+    fireworks.push(new Firework(Math.random()*canvas.width, Math.random()*canvas.height/2,type));
+},800);
 
+// ===== 点击触发烟花 =====
 canvas.addEventListener("click",e=>{
-    fireworks.push(new Firework(e.clientX,e.clientY));
+    fireworks.push(new Firework(e.clientX,e.clientY,"heart"));
 });
 
-
-// 🎉 倒数
+// ===== 倒数 =====
 let count=10;
 let cd=document.getElementById("countdown");
-
 let timer=setInterval(()=>{
     count--;
     cd.innerText=count;
@@ -152,23 +238,6 @@ let timer=setInterval(()=>{
         cd.innerText="🎆 HAPPY NEW YEAR 🎆";
     }
 },1000);
-
-// 🧧 红包
-function createHongbao(){
-    let hb=document.createElement("div");
-    hb.className="hongbao";
-    hb.innerText="🧧";
-    hb.style.left=Math.random()*100+"vw";
-    hb.style.animationDuration=(Math.random()*3+4)+"s";
-    document.body.appendChild(hb);
-    setTimeout(()=>hb.remove(),6000);
-}
-setInterval(createHongbao,800);
-
-// 注册 PWA
-if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('service-worker.js');
-}
 </script>
 
 </body>
